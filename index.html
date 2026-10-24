@@ -1,0 +1,1119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Speak Daily</title>
+<meta name="theme-color" content="#0B7285">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Speak Daily">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:wght@600;700;800&display=swap">
+<style>
+/* Layout: one narrow column built for a phone. Tabs (Lessons / AI chat) -> lesson or chat -> result report. */
+:root {
+  --bg: #EEF3F5;
+  --surface: #FFFFFF;
+  --fg: #10222B;
+  --muted: #4D646F;
+  --line: #CFDCE2;
+  --accent: #0B7285;
+  --accent-fg: #FFFFFF;
+  --accent-soft: #D5ECF0;
+  --sun: #C98A12;
+  --good: #1B7F4B;
+  --good-soft: #D8F0E1;
+  --bad: #B3392B;
+  --bad-soft: #F7DDD8;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Helvetica Neue", Arial, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0C171C; --surface: #14252C; --fg: #E7F0F3; --muted: #9DB4BD; --line: #27414B;
+    --accent: #4FC3D4; --accent-fg: #06232A; --accent-soft: #16363F; --sun: #F2B134;
+    --good: #5FD08F; --good-soft: #173A29; --bad: #FF8F7E; --bad-soft: #42201B;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0C171C; --surface: #14252C; --fg: #E7F0F3; --muted: #9DB4BD; --line: #27414B;
+  --accent: #4FC3D4; --accent-fg: #06232A; --accent-soft: #16363F; --sun: #F2B134;
+  --good: #5FD08F; --good-soft: #173A29; --bad: #FF8F7E; --bad-soft: #42201B;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.45;
+  padding-block: 12px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+button, textarea, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.sec { display: flex; flex-direction: column; gap: 16px; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.1; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.sr { position: absolute; left: -9999px; }
+
+/* top bar */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { font-family: var(--font-display); font-weight: 800; font-size: 1.35rem; letter-spacing: -0.01em; }
+.chips { display: flex; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.chip svg { width: 18px; height: 18px; }
+.flame { fill: var(--sun); }
+
+/* tabs */
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 4px; }
+.tab { min-height: 46px; border: 0; border-radius: 10px; background: transparent; font-weight: 700; }
+.tab[aria-selected="true"] { background: var(--accent); color: var(--accent-fg); }
+
+/* home */
+.goal { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.goal-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.goal h2 { font-size: 1.3rem; }
+.goal .num { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 700; }
+.bar { height: 12px; background: var(--accent-soft); border-radius: 999px; overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 999px; transition: width .4s ease; }
+.topics { display: flex; flex-direction: column; gap: 12px; }
+.topic { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.topic h3 { font-size: 1.25rem; }
+.topic .blurb { color: var(--muted); }
+.levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.lvl { min-height: 64px; background: var(--bg); border: 1.5px solid var(--line); border-radius: 12px; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.lvl:active { transform: scale(.97); }
+.lvl b { font-family: var(--font-display); font-size: 1.02rem; }
+.lvl span { font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.lvl.done { border-color: var(--accent); background: var(--accent-soft); }
+.tip { border-left: 4px solid var(--accent); padding: 4px 0 4px 14px; color: var(--muted); }
+.tip b { color: var(--fg); }
+
+/* lesson + shared */
+.lesson-top { display: flex; align-items: center; gap: 12px; }
+.icon-btn { width: 48px; height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.icon-btn svg, .btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.icon-btn svg.fill, .btn svg.fill { fill: currentColor; stroke: none; }
+.progress { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.progress .count { font-size: .9rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.card h2 { font-size: 1.4rem; }
+.label { font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.target { display: flex; flex-wrap: wrap; gap: 6px 4px; font-family: var(--font-display); font-weight: 600; font-size: 1.55rem; line-height: 1.25; }
+.w { background: none; border: 0; border-radius: 8px; padding: 2px 6px; font: inherit; color: inherit; text-align: left; }
+.w.ok { background: var(--good-soft); color: var(--good); }
+.w.miss { background: var(--bad-soft); color: var(--bad); text-decoration: underline wavy; text-underline-offset: 5px; outline: 2px dashed var(--bad); outline-offset: -2px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn { min-height: 52px; padding: 0 18px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface); display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; flex: 1 1 auto; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.btn.ghost { background: transparent; }
+.btn.small { min-height: 44px; padding: 0 14px; flex: 0 0 auto; }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn:active { transform: scale(.98); }
+.breathe { color: var(--muted); }
+textarea, input[type="text"] { width: 100%; border-radius: 12px; border: 1.5px solid var(--line); background: var(--bg); padding: 12px; font-size: 1.05rem; }
+textarea { min-height: 84px; resize: vertical; }
+input[type="text"] { min-height: 48px; }
+.note { font-size: .92rem; color: var(--muted); }
+.note.alert { color: var(--bad); font-weight: 700; }
+.result { display: flex; flex-direction: column; gap: 12px; }
+.score { display: flex; align-items: baseline; gap: 12px; }
+.score .pct { font-family: var(--font-display); font-weight: 800; font-size: 2.6rem; font-variant-numeric: tabular-nums; }
+.score .verdict { font-weight: 700; font-size: 1.1rem; }
+.heard { background: var(--bg); border-radius: 12px; padding: 10px 12px; }
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; }
+.stat { background: var(--bg); border-radius: 12px; padding: 12px; min-width: 0; text-align: left; }
+.stat b { display: block; font-family: var(--font-display); font-size: 1.4rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.stat span { font-size: .85rem; color: var(--muted); display: block; }
+.words-line { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* done */
+.done-card { text-align: center; align-items: center; padding: 28px 18px; }
+.done-card .big { font-family: var(--font-display); font-weight: 800; font-size: 3.4rem; font-variant-numeric: tabular-nums; }
+
+/* chat setup */
+.pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--bg); font-weight: 700; }
+.pill[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.hist { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.hist:first-of-type { border-top: 0; }
+
+/* chat */
+.chat-top { display: flex; align-items: center; gap: 12px; }
+.chat-top .title { flex: 1; min-width: 0; font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; overflow-wrap: anywhere; }
+.msgs { display: flex; flex-direction: column; gap: 10px; }
+.msg { max-width: 88%; border-radius: 16px; padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; overflow-wrap: anywhere; }
+.msg.ai { align-self: flex-start; background: var(--surface); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.msg.me { align-self: flex-end; background: var(--accent-soft); border-bottom-right-radius: 4px; }
+.msg.thinking .txt { color: var(--muted); font-style: italic; }
+.msg .who { font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.msg .play { align-self: flex-start; min-height: 40px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); display: inline-flex; align-items: center; gap: 6px; font-size: .9rem; font-weight: 700; }
+.msg .play svg { width: 18px; height: 18px; fill: currentColor; stroke: none; }
+.toggle { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.toggle input { width: 22px; height: 22px; accent-color: var(--accent); }
+
+/* report */
+.overall { display: flex; align-items: center; gap: 16px; }
+.overall .big { font-family: var(--font-display); font-weight: 800; font-size: 3.6rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.overall .meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.metric { display: grid; grid-template-columns: 110px 1fr 40px; align-items: center; gap: 10px; }
+.metric .num { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.mistake { background: var(--bg); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+.mistake .said { color: var(--bad); text-decoration: line-through; }
+.mistake .better { color: var(--good); font-weight: 700; }
+.mistake .why { color: var(--muted); font-size: .92rem; }
+ul.clean { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+
+@media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } .btn:active, .lvl:active { transform: none; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">Speak Daily</div>
+    <div class="chips">
+      <span class="chip"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="flame" d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-4-1-6 1-10z"/></svg><span id="streak">0</span><span class="sr">day streak</span></span>
+      <span class="chip"><span id="xp">0</span> XP</span>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Choose a mode">
+    <button class="tab" id="tabLessons" role="tab" aria-selected="true">Lessons</button>
+    <button class="tab" id="tabChat" role="tab" aria-selected="false">Chat</button>
+  </nav>
+
+  <!-- HOME (lessons) -->
+  <section id="home" class="sec">
+    <div class="goal">
+      <div class="goal-row"><h2>Today's goal</h2><span class="num"><span id="todayXp">0</span> / 40 XP</span></div>
+      <div class="bar" role="progressbar" aria-label="Daily goal" aria-valuemin="0" aria-valuemax="40" id="goalBar"><i id="goalFill"></i></div>
+      <p class="note" id="goalNote">One good lesson reaches your goal.</p>
+    </div>
+    <div class="topics" id="topics"></div>
+    <p class="tip"><b>Speak slowly.</b> Take one breath, then say the sentence. Pause for one second between sentences.</p>
+  </section>
+
+  <!-- CHAT SETUP -->
+  <section id="chatSetup" class="sec" hidden>
+    <div class="card">
+      <h2>Chat with a practice partner</h2>
+      <p class="note">Pick a topic. Your partner asks you questions out loud. When you finish, you get a rating for grammar, vocabulary, fluency, speed and more.</p>
+      <span class="label">Topic</span>
+      <div class="pills" id="topicPills"></div>
+      <label class="label" for="customTopic">Or write your own topic</label>
+      <input type="text" id="customTopic" maxlength="60" placeholder="For example: buying a house" autocomplete="off">
+      <span class="label">Your level</span>
+      <div class="pills" id="levelPills"></div>
+      <button class="btn primary" id="startChat">Start chat</button>
+      <p class="note" id="chatSetupNote">The partner uses ready-made questions. It does not use AI, and it costs nothing.</p>
+    </div>
+    <div class="card" id="historyCard" hidden>
+      <span class="label">Recent ratings</span>
+      <div id="history"></div>
+    </div>
+    <p class="tip"><b>How to speak:</b> tap the microphone on your iPhone keyboard, say your message, then tap Send. Speak slowly, one idea at a time.</p>
+  </section>
+
+  <!-- CHAT -->
+  <section id="chat" class="sec" hidden>
+    <div class="chat-top">
+      <button class="icon-btn" id="chatBack" aria-label="Leave chat"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="title" id="chatTitle">Chat</div>
+      <button class="btn primary small" id="endChat">End and rate</button>
+    </div>
+    <p class="note" id="chatNote" aria-live="polite"></p>
+    <div class="msgs" id="msgs" aria-live="polite"></div>
+    <div class="card">
+      <label class="toggle"><input type="checkbox" id="voiceOn" checked> Read replies out loud</label>
+      <label class="note" for="chatInput">Tap the microphone on your keyboard and speak, or type. Then tap Send.</label>
+      <textarea id="chatInput" rows="3" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="Your message"></textarea>
+      <div class="row">
+        <button class="btn" id="chatMic" hidden><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span id="chatMicText">Speak</span></button>
+        <button class="btn primary" id="sendBtn" disabled>Send</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- REPORT -->
+  <section id="report" class="sec" hidden>
+    <div class="sec" id="reportBody" hidden></div>
+  </section>
+
+  <!-- LESSON -->
+  <section id="lesson" class="sec" hidden>
+    <div class="lesson-top">
+      <button class="icon-btn" id="back" aria-label="Back to home"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="progress">
+        <div class="bar" role="progressbar" aria-label="Lesson progress"><i id="lessonFill"></i></div>
+        <span class="count" id="count">1 / 5</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="label" id="lessonLabel">Daily life · Easy</span>
+      <div class="target" id="target"></div>
+      <div class="row">
+        <button class="btn" id="listen"><svg class="fill" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round"/></svg>Listen</button>
+        <button class="btn" id="slow"><svg class="fill" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/></svg>Listen slowly</button>
+      </div>
+      <p class="note">Tap any word to hear it.</p>
+    </div>
+
+    <div class="card">
+      <span class="label">Your turn</span>
+      <p class="breathe">Take one breath. Speak slowly and clearly.</p>
+      <div class="row">
+        <button class="btn primary" id="mic" hidden><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span id="micText">Tap and speak</span></button>
+      </div>
+      <label class="note" for="spoken" id="spokenHelp">Tap the microphone on your keyboard, say the sentence, then tap Check.</label>
+      <textarea id="spoken" rows="3" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="Your words will appear here"></textarea>
+      <p class="note" id="micMsg" aria-live="polite"></p>
+      <div class="row">
+        <button class="btn primary" id="check">Check</button>
+      </div>
+    </div>
+
+    <div class="card result" id="result" aria-live="polite" hidden>
+      <div class="score"><span class="pct" id="pct">0%</span><span class="verdict" id="verdict"></span></div>
+      <p class="note" id="resultHint"></p>
+      <div class="stats" id="details"></div>
+      <div class="heard"><span class="label">You said</span><p id="heard"></p></div>
+      <div class="row">
+        <button class="btn" id="retry">Try again</button>
+        <button class="btn primary" id="next">Next</button>
+      </div>
+    </div>
+    <button class="btn ghost" id="skip">Skip this sentence</button>
+  </section>
+
+  <!-- DONE -->
+  <section id="done" class="sec" hidden>
+    <div class="card done-card">
+      <span class="label">Lesson complete</span>
+      <div class="big" id="doneScore">0%</div>
+      <h2 id="doneVerdict">Good work</h2>
+      <div class="stats">
+        <div class="stat"><b id="doneXp">0</b><span>XP earned</span></div>
+        <div class="stat"><b id="doneStreak">0</b><span>Day streak</span></div>
+        <div class="stat"><b id="doneSpeed">-</b><span>Words per minute</span></div>
+        <div class="stat"><b id="doneMissed">0</b><span>Words to practice</span></div>
+      </div>
+      <div id="practiceBox" style="width:100%;text-align:left" hidden>
+        <span class="label">Tap a word to hear it</span>
+        <div class="words-line" id="practiceWords" style="margin-top:8px"></div>
+      </div>
+      <p class="tip" id="doneTip" style="text-align:left"></p>
+      <div class="row" style="width:100%">
+        <button class="btn" id="again">Practice again</button>
+        <button class="btn primary" id="home2">Home</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var KEY = 'speakdaily.v1';
+  var GOAL = 40;
+  var LEVEL_NAMES = ['Easy', 'Medium', 'Hard'];
+  var SECTIONS = ['home', 'chatSetup', 'chat', 'report', 'lesson', 'done'];
+
+  var TOPICS = [
+    { id: 'life', name: 'Daily life', blurb: 'Shops, travel and small talk', levels: [
+      ['Hello, how are you today?', 'I would like a cup of coffee, please.', 'Can you help me, please?', 'Nice to meet you.', 'Where is the nearest bus stop?'],
+      ['Could you tell me how to get to the train station?', 'I am looking for a small gift for my friend.', 'Sorry, could you say that again more slowly?', 'I usually wake up early and go for a walk.', 'Do you have this in a bigger size?'],
+      ['I would appreciate it if you could recommend a good restaurant nearby.', 'We booked a table for seven o\'clock, but unfortunately we arrived late.', 'Although the weather was cold, we decided to walk along the river.', 'I have been learning English for a while, and I am getting more confident.', 'Would you mind if I asked you a quick question?']
+    ] },
+    { id: 'work', name: 'Work', blurb: 'Meetings, emails and presentations', levels: [
+      ['Good morning, everyone.', 'I will send the email today.', 'Let me check and tell you later.', 'Thank you for your time.', 'I have a question about the schedule.'],
+      ['Could we move the meeting to tomorrow afternoon?', 'I will finish the report by Friday.', 'Thank you for waiting, let us get started.', 'I think we need a little more time for this task.', 'Can you please share the file with me?'],
+      ['Today I would like to talk about our results for this quarter.', 'Based on the data, I recommend that we start the project next month.', 'I understand your concern, and I would like to suggest another option.', 'To summarize, we completed three tasks and we are on schedule.', 'Thank you for listening, and I am happy to answer any questions.']
+    ] },
+    { id: 'study', name: 'Study', blurb: 'Class, questions and exams', levels: [
+      ['I have a class at nine o\'clock.', 'Please repeat the question.', 'I do not understand this word.', 'May I ask a question?', 'I need more time to study.'],
+      ['What does this word mean in this sentence?', 'I am preparing for my exam next week.', 'Can you explain this topic again, please?', 'I will read the chapter and write a short summary.', 'My presentation is about climate and cities.'],
+      ['In my opinion, regular practice is more important than studying for many hours.', 'First, I will explain the problem, and then I will share my solution.', 'According to the research, students learn better when they take short breaks.', 'I would like to thank my teacher for the support during this course.', 'The main point of my presentation is that small habits create big results.']
+    ] }
+  ];
+
+  var CHAT_TOPICS = ['My daily routine', 'Travel', 'Job interview', 'Food and cooking', 'Business meeting', 'Study and exams', 'Technology', 'Health and sport', 'Free talk'];
+  var CHAT_LEVELS = ['Beginner', 'Intermediate', 'Advanced'];
+
+  var TIPS = [
+    'Pause for one second between sentences. Short and slow sounds confident.',
+    'Say each sentence three times. The third time is usually the best.',
+    'Record yourself on your phone and listen back. You will hear your progress.',
+    'Stress the important word in each sentence a little more than the others.',
+    'Take one breath before you start. It slows you down and calms you.'
+  ];
+
+  /* ---------- saved progress ---------- */
+  var data = { xp: 0, streak: 0, last: '', days: {}, best: {}, chats: [] };
+  try {
+    var raw = localStorage.getItem(KEY);
+    if (raw) { var p = JSON.parse(raw); if (p && typeof p === 'object') { data = Object.assign(data, p); } }
+  } catch (e) { /* storage not available: progress stays for this visit only */ }
+  if (!Array.isArray(data.chats)) { data.chats = []; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { /* ignore */ } }
+  function dayKey(d) {
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var dd = String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() + '-' + m + '-' + dd;
+  }
+  function today() { return dayKey(new Date()); }
+  function yesterday() { var d = new Date(); d.setDate(d.getDate() - 1); return dayKey(d); }
+  function currentStreak() { return (data.last === today() || data.last === yesterday()) ? data.streak : 0; }
+  function todayXp() { return data.days[today()] || 0; }
+  function award(xp) {
+    var t = today();
+    data.xp += xp;
+    data.days[t] = (data.days[t] || 0) + xp;
+    if (data.last !== t) { data.streak = (data.last === yesterday()) ? data.streak + 1 : 1; data.last = t; }
+    save();
+  }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) { e.className = cls; }
+    if (text !== undefined) { e.textContent = text; }
+    return e;
+  }
+
+  /* ---------- voice (text to speech) ---------- */
+  var voice = null;
+  function pickVoice() {
+    if (!('speechSynthesis' in window)) { return; }
+    var vs = window.speechSynthesis.getVoices() || [];
+    var pref = ['en-US', 'en-GB', 'en-AU'];
+    for (var i = 0; i < pref.length && !voice; i++) {
+      for (var j = 0; j < vs.length; j++) { if (vs[j].lang && vs[j].lang.replace('_', '-') === pref[i]) { voice = vs[j]; break; } }
+    }
+    if (!voice) { for (var k = 0; k < vs.length; k++) { if (vs[k].lang && vs[k].lang.toLowerCase().indexOf('en') === 0) { voice = vs[k]; break; } } }
+  }
+  if ('speechSynthesis' in window) {
+    pickVoice();
+    try { window.speechSynthesis.addEventListener('voiceschanged', pickVoice); } catch (e) { /* ignore */ }
+  }
+  function speak(text, rate) {
+    if (!('speechSynthesis' in window)) { return; }
+    try {
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(text);
+      u.lang = 'en-US';
+      if (voice) { u.voice = voice; }
+      u.rate = rate;
+      window.speechSynthesis.speak(u);
+    } catch (e) { /* ignore */ }
+  }
+  function unlockVoice() {
+    if (!('speechSynthesis' in window)) { return; }
+    try { var u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); } catch (e) { /* ignore */ }
+  }
+  function stopVoice() { try { window.speechSynthesis.cancel(); } catch (e) { /* ignore */ } }
+
+  /* ---------- timing of what you say ---------- */
+  function newTimer() { return { first: 0, last: 0 }; }
+  function mark(t) { var n = Date.now(); if (!t.first) { t.first = n; } t.last = n; }
+  function resetTimer(t) { t.first = 0; t.last = 0; }
+
+  /* ---------- comparing words ---------- */
+  var NUMBERS = { '0': 'zero', '1': 'one', '2': 'two', '3': 'three', '4': 'four', '5': 'five', '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine', '10': 'ten', '11': 'eleven', '12': 'twelve' };
+  var FILLERS = { um: 1, umm: 1, uh: 1, uhh: 1, er: 1, erm: 1, ah: 1, hmm: 1, uhm: 1, mm: 1 };
+  function clean(w) {
+    var c = w.toLowerCase().replace(/[’‘]/g, "'").replace(/[^a-z0-9']/g, '');
+    return NUMBERS[c] || c;
+  }
+  function words(s) { return s.split(/\s+/).filter(Boolean); }
+  function fluencyInfo(text) {
+    var sw = words(text).map(clean).filter(Boolean);
+    var fillers = 0, repeats = 0;
+    for (var i = 0; i < sw.length; i++) {
+      if (FILLERS[sw[i]]) { fillers++; }
+      if (i > 0 && sw[i] === sw[i - 1] && !FILLERS[sw[i]]) { repeats++; }
+    }
+    return { count: sw.length, fillers: fillers, repeats: repeats };
+  }
+  function compare(target, spoken) {
+    var shown = words(target);
+    var tw = shown.map(clean);
+    var sw = words(spoken).map(clean).filter(Boolean);
+    var n = tw.length, m = sw.length, i, j;
+    var dp = [];
+    for (i = 0; i <= n; i++) { dp.push(new Array(m + 1).fill(0)); }
+    for (i = 1; i <= n; i++) {
+      for (j = 1; j <= m; j++) {
+        dp[i][j] = tw[i - 1] === sw[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+    var ok = new Array(n).fill(false);
+    var sOk = new Array(m).fill(false);
+    i = n; j = m;
+    while (i > 0 && j > 0) {
+      if (tw[i - 1] === sw[j - 1]) { ok[i - 1] = true; sOk[j - 1] = true; i--; j--; }
+      else if (dp[i - 1][j] >= dp[i][j - 1]) { i--; } else { j--; }
+    }
+    var hits = ok.filter(Boolean).length;
+    var extra = [];
+    for (j = 0; j < m; j++) { if (!sOk[j] && !FILLERS[sw[j]]) { extra.push(sw[j]); } }
+    var missedWords = [];
+    for (i = 0; i < n; i++) { if (!ok[i]) { missedWords.push(tw[i]); } }
+    var flu = fluencyInfo(spoken);
+    return { shown: shown, ok: ok, score: n ? Math.round(hits / n * 100) : 0, missed: n - hits, missedWords: missedWords, extra: extra, fillers: flu.fillers, repeats: flu.repeats, spokenCount: m };
+  }
+  function wpmOf(wordCount, ms) {
+    if (!ms || ms < 1200 || wordCount < 3) { return 0; }
+    return Math.round(wordCount / (ms / 60000));
+  }
+  function speedLabel(wpm) {
+    if (!wpm) { return 'Not enough data'; }
+    if (wpm < 80) { return 'Slow. Try to join your words.'; }
+    if (wpm <= 150) { return 'Good speed'; }
+    return 'Fast. Slow down and pause.';
+  }
+
+  /* ---------- home ---------- */
+  function stars(score) { return score >= 90 ? 3 : score >= 70 ? 2 : score > 0 ? 1 : 0; }
+  function renderHome() {
+    $('streak').textContent = String(currentStreak());
+    $('xp').textContent = String(data.xp);
+    var t = todayXp();
+    $('todayXp').textContent = String(Math.min(t, 999));
+    var pct = Math.min(100, Math.round(t / GOAL * 100));
+    $('goalFill').style.width = pct + '%';
+    $('goalBar').setAttribute('aria-valuenow', String(Math.min(t, GOAL)));
+    $('goalNote').textContent = t >= GOAL ? 'Goal reached today. Great job!' : 'One good lesson reaches your goal.';
+    var box = $('topics');
+    box.textContent = '';
+    TOPICS.forEach(function (tp) {
+      var card = el('div', 'topic');
+      var lv = el('div', 'levels');
+      LEVEL_NAMES.forEach(function (ln, idx) {
+        var best = data.best[tp.id + '-' + idx] || 0;
+        var btn = el('button', 'lvl' + (best >= 70 ? ' done' : ''));
+        btn.setAttribute('aria-label', tp.name + ', ' + ln + (best ? ', best score ' + best + ' percent' : ', not played yet'));
+        var st = stars(best);
+        btn.appendChild(el('b', '', ln));
+        btn.appendChild(el('span', '', best ? '★'.repeat(st) + '☆'.repeat(3 - st) + ' ' + best + '%' : 'New'));
+        btn.addEventListener('click', function () { startLesson(tp, idx); });
+        lv.appendChild(btn);
+      });
+      card.appendChild(el('h3', '', tp.name));
+      card.appendChild(el('p', 'blurb', tp.blurb));
+      card.appendChild(lv);
+      box.appendChild(card);
+    });
+  }
+  function show(name) {
+    SECTIONS.forEach(function (id) { $(id).hidden = id !== name; });
+    var showTabs = name === 'home' || name === 'chatSetup';
+    $('tabs').hidden = !showTabs;
+    $('tabLessons').setAttribute('aria-selected', String(name !== 'chatSetup'));
+    $('tabChat').setAttribute('aria-selected', String(name === 'chatSetup'));
+    $('streak').textContent = String(currentStreak());
+    $('xp').textContent = String(data.xp);
+    try { window.scrollTo(0, 0); } catch (e) { /* ignore */ }
+  }
+
+  /* ---------- lesson ---------- */
+  var L = null;
+  var lt = newTimer();
+  function startLesson(tp, idx) {
+    stopMic();
+    L = { tp: tp, idx: idx, items: tp.levels[idx], i: 0, scores: [], best: 0, checked: false, wpms: [], missed: {} };
+    show('lesson');
+    renderSentence();
+  }
+  function renderSentence() {
+    var s = L.items[L.i];
+    $('count').textContent = (L.i + 1) + ' / ' + L.items.length;
+    $('lessonFill').style.width = (L.i / L.items.length * 100) + '%';
+    $('lessonLabel').textContent = L.tp.name + ' · ' + LEVEL_NAMES[L.idx];
+    drawTarget(s, null);
+    $('spoken').value = '';
+    resetTimer(lt);
+    $('micMsg').textContent = '';
+    $('micMsg').className = 'note';
+    $('result').hidden = true;
+    $('skip').hidden = false;
+    $('check').disabled = false;
+    L.best = 0; L.checked = false;
+    $('next').textContent = L.i === L.items.length - 1 ? 'Finish' : 'Next';
+  }
+  function drawTarget(sentence, res) {
+    var box = $('target');
+    box.textContent = '';
+    words(sentence).forEach(function (w, i) {
+      var b = el('button', 'w' + (res ? (res.ok[i] ? ' ok' : ' miss') : ''), w);
+      b.setAttribute('aria-label', w + (res ? (res.ok[i] ? ', correct' : ', missed') : ''));
+      b.addEventListener('click', function () { speak(clean(w) || w, 0.7); });
+      box.appendChild(b);
+    });
+  }
+  function addStat(parent, value, label) {
+    var s = el('div', 'stat');
+    s.appendChild(el('b', '', value));
+    s.appendChild(el('span', '', label));
+    parent.appendChild(s);
+  }
+  function check() {
+    var text = $('spoken').value.trim();
+    if (!text) {
+      $('micMsg').textContent = 'Say the sentence first, then tap Check.';
+      $('micMsg').className = 'note alert';
+      return;
+    }
+    $('micMsg').textContent = '';
+    $('micMsg').className = 'note';
+    var s = L.items[L.i];
+    var res = compare(s, text);
+    var wpm = wpmOf(res.spokenCount, lt.last - lt.first);
+    if (wpm) { L.wpms.push(wpm); }
+    if (res.score >= L.best) { L.best = res.score; }
+    res.missedWords.forEach(function (w) { if (w) { L.missed[w] = true; } });
+    L.checked = true;
+    drawTarget(s, res);
+    $('pct').textContent = res.score + '%';
+    $('verdict').textContent = res.score >= 90 ? 'Excellent!' : res.score >= 70 ? 'Good job' : res.score >= 40 ? 'Nearly there' : 'Try again slowly';
+    $('resultHint').textContent = res.missed ? 'Outlined words were missed. Tap one to hear it, then try again.' : 'Every word was correct.';
+    var d = $('details');
+    d.textContent = '';
+    addStat(d, wpm ? '~' + wpm : '-', wpm ? 'Words per minute. ' + speedLabel(wpm) : 'Speed. Not enough data');
+    addStat(d, res.missedWords.length ? res.missedWords.join(', ') : 'None', 'Missed words');
+    addStat(d, res.extra.length ? res.extra.join(', ') : 'None', 'Extra words you said');
+    var fl = [];
+    if (res.fillers) { fl.push(res.fillers + ' filler' + (res.fillers > 1 ? 's' : '')); }
+    if (res.repeats) { fl.push(res.repeats + ' repeated word' + (res.repeats > 1 ? 's' : '')); }
+    addStat(d, fl.length ? fl.join(', ') : 'Smooth', 'Fluency (um, uh, repeats)');
+    $('heard').textContent = text;
+    $('result').hidden = false;
+    $('skip').hidden = true;
+    try { $('result').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (e) { /* ignore */ }
+  }
+  function retry() {
+    stopMic();
+    drawTarget(L.items[L.i], null);
+    $('spoken').value = '';
+    resetTimer(lt);
+    $('result').hidden = true;
+    $('skip').hidden = false;
+    L.checked = false;
+    try { $('spoken').focus(); } catch (e) { /* ignore */ }
+  }
+  function next() {
+    stopMic();
+    L.scores.push(L.best);
+    if (L.i >= L.items.length - 1) { finish(); return; }
+    L.i += 1;
+    renderSentence();
+  }
+  function finish() {
+    var sum = L.scores.reduce(function (a, b) { return a + b; }, 0);
+    var avg = Math.round(sum / L.scores.length);
+    var xp = L.scores.reduce(function (a, b) { return a + Math.round(b / 10); }, 0);
+    award(xp);
+    var key = L.tp.id + '-' + L.idx;
+    data.best[key] = Math.max(data.best[key] || 0, avg);
+    save();
+    $('doneScore').textContent = avg + '%';
+    $('doneVerdict').textContent = avg >= 90 ? 'Excellent speaking!' : avg >= 70 ? 'Good work' : 'Keep going, you are improving';
+    $('doneXp').textContent = '+' + xp;
+    $('doneStreak').textContent = String(currentStreak());
+    var avgWpm = L.wpms.length ? Math.round(L.wpms.reduce(function (a, b) { return a + b; }, 0) / L.wpms.length) : 0;
+    $('doneSpeed').textContent = avgWpm ? '~' + avgWpm : '-';
+    var mw = Object.keys(L.missed);
+    $('doneMissed').textContent = String(mw.length);
+    var pw = $('practiceWords');
+    pw.textContent = '';
+    mw.forEach(function (w) {
+      var b = el('button', 'w miss', w);
+      b.addEventListener('click', function () { speak(w, 0.7); });
+      pw.appendChild(b);
+    });
+    $('practiceBox').hidden = mw.length === 0;
+    $('doneTip').textContent = TIPS[Math.floor(Math.random() * TIPS.length)];
+    $('lessonFill').style.width = '100%';
+    show('done');
+  }
+
+  /* ---------- microphone (works only where the browser allows it) ---------- */
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var rec = null, listening = false, micTarget = null;
+  function micOff(msgEl) {
+    $('mic').hidden = true;
+    $('chatMic').hidden = true;
+    if (msgEl) {
+      msgEl.textContent = 'The microphone does not work on this page. Use the microphone on your keyboard instead.';
+      msgEl.className = 'note alert';
+    }
+  }
+  function stopMic() {
+    if (rec && listening) { try { rec.stop(); } catch (e) { /* ignore */ } }
+    listening = false;
+    $('micText').textContent = 'Tap and speak';
+    $('chatMicText').textContent = 'Speak';
+  }
+  // box = textarea to fill, timer = its timer, msgEl = where to show errors, label = button text element, idle = its normal text, onDone = after speech ends
+  function startMic(box, timer, msgEl, label, idle, onDone) {
+    if (listening) { stopMic(); return; }
+    try {
+      rec = new SR();
+      rec.lang = 'en-US';
+      rec.interimResults = true;
+      rec.continuous = false;
+      rec.onresult = function (ev) {
+        var t = '';
+        for (var i = 0; i < ev.results.length; i++) { t += ev.results[i][0].transcript + ' '; }
+        box.value = t.trim();
+        mark(timer);
+        updateSend();
+      };
+      rec.onerror = function () { listening = false; label.textContent = idle; micOff(msgEl); };
+      rec.onend = function () {
+        var was = listening;
+        listening = false;
+        label.textContent = idle;
+        if (was && box.value.trim() && onDone) { onDone(); }
+      };
+      listening = true;
+      label.textContent = 'Listening... tap to stop';
+      micTarget = box;
+      rec.start();
+    } catch (e) {
+      listening = false;
+      micOff(msgEl);
+    }
+  }
+  if (SR) { $('mic').hidden = false; $('chatMic').hidden = false; }
+
+  /* ---------- practice chat (ready-made questions, no AI, no Claude usage) ---------- */
+  var selTopic = CHAT_TOPICS[0], selLevel = CHAT_LEVELS[0];
+  var CHAT = null;
+  var ct = newTimer();
+
+  var BANK = {
+    'My daily routine': {
+      easy: ['What time do you wake up in the morning?', 'What do you usually eat for breakfast?', 'How do you get to work or school?', 'What do you do in the evening?'],
+      deep: ['Which part of your day do you enjoy the most, and why?', 'What would you change about your daily routine?', 'How do you stay organized when you are very busy?', 'Tell me about a day that did not go as planned.', 'How has your routine changed in the last year?']
+    },
+    'Travel': {
+      easy: ['Where do you like to go on holiday?', 'Who do you usually travel with?', 'What do you like to eat when you travel?', 'What is the best place you have visited?'],
+      deep: ['Tell me about a trip that you will never forget.', 'Do you prefer to plan every detail, or to be spontaneous? Why?', 'What did you learn from visiting a new culture?', 'What problems have you had while travelling, and how did you solve them?', 'If you could live in another country, where would you go and why?']
+    },
+    'Job interview': {
+      easy: ['Please tell me a little about yourself.', 'Why do you want this job?', 'What are your strong points?', 'Where did you work or study before?'],
+      deep: ['Tell me about a time you solved a difficult problem.', 'How do you work with people who think differently from you?', 'What is a weakness you are working on, and how?', 'Where do you see yourself in five years?', 'Why should we choose you instead of other people?']
+    },
+    'Food and cooking': {
+      easy: ['What is your favorite food?', 'Do you like to cook at home?', 'What do you usually have for dinner?', 'What food do you not like?'],
+      deep: ['Tell me how to cook a dish from your country.', 'How has the way you eat changed over the years?', 'Do you think home cooking is better than eating out? Why?', 'Describe the best meal you ever had.', 'How can people eat in a healthier way?']
+    },
+    'Business meeting': {
+      easy: ['Good morning. Can you introduce yourself to the team?', 'What is your role in the company?', 'What is the main goal of your project?', 'When can you finish your next task?'],
+      deep: ['Please give us an update on your project and any problems.', 'How would you persuade the team to try a new idea?', 'A customer is unhappy. What would you say to them?', 'How do you give feedback to a colleague politely?', 'What would you do if the deadline is too early?']
+    },
+    'Study and exams': {
+      easy: ['What do you study now, or what did you study?', 'Why did you choose this subject?', 'How do you prepare for an exam?', 'Where do you like to study?'],
+      deep: ['What is the hardest part of studying for you, and how do you handle it?', 'How can students stay focused for a long time?', 'Do you think online classes are as good as classes in a room? Why?', 'Tell me about a time you got a result you did not expect.', 'What advice would you give to a new student?']
+    },
+    'Technology': {
+      easy: ['What phone or computer do you use every day?', 'What apps do you use the most?', 'How do you use technology at work or school?', 'Do you like new technology?'],
+      deep: ['How has technology changed the way people talk to each other?', 'What are the good and bad sides of social media?', 'Do you think robots will take many jobs? Why?', 'How do you protect your information online?', 'What new invention would you like to see in the future?']
+    },
+    'Health and sport': {
+      easy: ['Do you do any sport or exercise?', 'How many hours do you sleep every night?', 'What do you do to relax?', 'What is your favorite sport to watch?'],
+      deep: ['What small habits help you stay healthy?', 'How do you stay active when you are very busy?', 'Why is mental health as important as physical health?', 'Tell me about a time you tried a new activity.', 'What advice would you give to someone who wants to get fit?']
+    },
+    'Free talk': {
+      easy: ['How are you today? What did you do this morning?', 'What do you like to do in your free time?', 'Tell me about your family or friends.', 'What is your favorite movie or show?'],
+      deep: ['What is something you are proud of?', 'What is a skill you want to learn, and why?', 'Tell me about a person who changed your life.', 'What makes a good day for you?', 'What is a goal for next year?']
+    }
+  };
+  var ACKS = ['I see.', 'That sounds good.', 'Nice, thank you.', 'Interesting!', 'Okay, I understand.', 'Thanks for sharing.'];
+  var PHRASES = [
+    ['In my opinion, ...', 'Use it to give your idea.'],
+    ['For example, ...', 'Use it to give an example.'],
+    ['The reason is that ...', 'Use it to explain why.'],
+    ['I would like to ...', 'A polite way to say what you want.'],
+    ['Could you say that again, please?', 'Use it when you did not understand.'],
+    ['It depends on ...', 'Use it when there is no simple answer.']
+  ];
+
+  function questionsFor(topic, level) {
+    var b = BANK[topic];
+    if (!b) {
+      b = {
+        easy: ['Tell me about ' + topic + '. What do you know about it?', 'Why are you interested in ' + topic + '?', 'What is your own experience with ' + topic + '?', 'Who do you talk to about ' + topic + '?'],
+        deep: ['What is the biggest problem with ' + topic + '?', 'How has ' + topic + ' changed in the last few years?', 'What advice would you give to a beginner in ' + topic + '?', 'What do people often get wrong about ' + topic + '?', 'What do you think will happen with ' + topic + ' in the future?']
+      };
+    }
+    if (level === 'Beginner') { return b.easy.concat(b.deep.slice(0, 2)); }
+    if (level === 'Intermediate') { return b.easy.slice(2).concat(b.deep); }
+    return b.deep.slice();
+  }
+
+  /* simple grammar rules on the text you said or typed */
+  var PAST = { go: 'went', eat: 'ate', see: 'saw', come: 'came', have: 'had', buy: 'bought', meet: 'met', get: 'got', make: 'made', take: 'took' };
+  var BASE = { went: 'go', came: 'come', saw: 'see', ate: 'eat', took: 'take', made: 'make', had: 'have', got: 'get', gave: 'give', ran: 'run', bought: 'buy' };
+  var AN_OK = { hour: 1, honest: 1, honor: 1, honour: 1, heir: 1 };
+  var A_OK = ['uni', 'use', 'usu', 'uti', 'eu', 'one', 'ubi'];
+  var RULES = [
+    { re: /\bI am agree\b/i, fix: function () { return 'I agree'; }, why: 'Do not use "am" before "agree".' },
+    { re: /\b(he|she|it) (don't|do not)\b/i, fix: function (m) { return m[1] + " doesn't"; }, why: 'Use "doesn\'t" after he, she or it.' },
+    { re: /\b(I|you|we|they) is\b/i, fix: function (m) { return m[1].toLowerCase() === 'i' ? 'I am' : m[1] + ' are'; }, why: 'Use "am" with I, and "are" with you, we, they.' },
+    { re: /\b(he|she|it) have\b/i, fix: function (m) { return m[1] + ' has'; }, why: 'Use "has" after he, she or it.' },
+    { re: /\bI has\b/i, fix: function () { return 'I have'; }, why: 'Use "have" with I.' },
+    { re: /\b(we|you|they) was\b/i, fix: function (m) { return m[1] + ' were'; }, why: 'Use "were" with you, we, they.' },
+    { re: /\bmore (better|easier|bigger|faster|cheaper|healthier)\b/i, fix: function (m) { return m[1]; }, why: 'Do not use "more" with this word.' },
+    { re: /\bmuch (people|friends|things|books|students)\b/i, fix: function (m) { return 'many ' + m[1]; }, why: 'Use "many" with things you can count.' },
+    { re: /\b(people|children|men|women|students) is\b/i, fix: function (m) { return m[1] + ' are'; }, why: 'Use "are" with more than one person.' },
+    { re: /\b(he|she) (go|like|want|need|work|live|eat|play|love|make|take|come|know|think|study)\b/i, fix: function (m) { var v = m[2].toLowerCase(); return m[1] + ' ' + (v === 'go' ? 'goes' : v === 'study' ? 'studies' : v + 's'); }, why: 'Add -s or -es to the verb after he or she.' },
+    { re: /\b(didn't|did not) (went|came|saw|ate|took|made|had|got|gave|ran|bought)\b/i, fix: function (m) { return m[1] + ' ' + BASE[m[2].toLowerCase()]; }, why: 'After "did not", use the base verb.' },
+    { re: /\b(yesterday|last night|last week|last month|last year)\b[^.?!]*?\b(I|we|they) (go|eat|see|come|have|buy|meet|get|make|take)\b/i, fix: function (m) { return 'Use past tense: ' + m[2] + ' ' + PAST[m[3].toLowerCase()]; }, why: 'Use the past tense for things that already happened.' },
+    { re: /\bgo to home\b/i, fix: function () { return 'go home'; }, why: 'Do not use "to" before "home".' }
+  ];
+  function grammarIssues(text) {
+    var out = [], i, m;
+    RULES.forEach(function (r) {
+      m = r.re.exec(text);
+      if (m) { out.push({ said: m[0], better: r.fix(m), why: r.why }); }
+    });
+    var re = /\b(a|an) ([a-z']+)/gi;
+    var n = 0;
+    while ((m = re.exec(text)) && n < 2) {
+      var art = m[1].toLowerCase(), w = m[2].toLowerCase();
+      var vowel = /^[aeiou]/.test(w);
+      if (art === 'a' && vowel && !A_OK.some(function (p) { return w.indexOf(p) === 0; })) {
+        out.push({ said: m[0], better: 'an ' + m[2], why: 'Use "an" before a vowel sound.' }); n++;
+      } else if (art === 'an' && !vowel && !AN_OK[w]) {
+        out.push({ said: m[0], better: 'a ' + m[2], why: 'Use "a" before a consonant sound.' }); n++;
+      }
+    }
+    return out;
+  }
+
+  function renderPills(boxId, list, current, onPick) {
+    var box = $(boxId);
+    box.textContent = '';
+    list.forEach(function (name) {
+      var b = el('button', 'pill', name);
+      b.setAttribute('aria-pressed', String(name === current));
+      b.addEventListener('click', function () { onPick(name); renderPills(boxId, list, name, onPick); });
+      box.appendChild(b);
+    });
+  }
+  function renderHistory() {
+    var box = $('history');
+    box.textContent = '';
+    var items = data.chats.slice(-5).reverse();
+    $('historyCard').hidden = items.length === 0;
+    items.forEach(function (c) {
+      var r = el('div', 'hist');
+      r.appendChild(el('span', '', c.d + ' · ' + c.topic));
+      r.appendChild(el('b', '', String(c.overall) + ' / 100'));
+      box.appendChild(r);
+    });
+  }
+  function openChatSetup() {
+    renderPills('topicPills', CHAT_TOPICS, selTopic, function (n) { selTopic = n; $('customTopic').value = ''; });
+    renderPills('levelPills', CHAT_LEVELS, selLevel, function (n) { selLevel = n; });
+    renderHistory();
+    show('chatSetup');
+  }
+
+  function addMsg(kind, text) {
+    var m = el('div', 'msg ' + kind);
+    m.appendChild(el('span', 'who', kind === 'ai' ? 'Partner' : 'You'));
+    m.appendChild(el('p', 'txt', text));
+    $('msgs').appendChild(m);
+    try { m.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (e) { /* ignore */ }
+    return m;
+  }
+  function addPlay(m, text) {
+    var b = el('button', 'play');
+    b.setAttribute('aria-label', 'Play this message');
+    b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/></svg>';
+    b.appendChild(document.createTextNode('Play'));
+    b.addEventListener('click', function () { unlockVoice(); speak(text, 0.9); });
+    m.appendChild(b);
+  }
+  function updateSend() { $('sendBtn').disabled = !CHAT || !$('chatInput').value.trim(); }
+  function partnerSay(text) {
+    var m = addMsg('ai', text);
+    addPlay(m, text);
+    if ($('voiceOn').checked) { speak(text, 0.9); }
+  }
+
+  function startChat() {
+    var custom = $('customTopic').value.trim();
+    var topic = custom || selTopic;
+    CHAT = { topic: topic, level: selLevel, qs: questionsFor(topic, selLevel), qi: 0, retried: false, finished: false, stats: [], texts: [], armed: false };
+    $('msgs').textContent = '';
+    $('chatTitle').textContent = topic;
+    $('chatNote').textContent = '';
+    $('chatInput').value = '';
+    resetTimer(ct);
+    unlockVoice();
+    show('chat');
+    updateSend();
+    partnerSay('Hi! I am your practice partner. Let us talk about ' + topic + '. ' + CHAT.qs[0]);
+  }
+  function partnerReply(c, n) {
+    if (c.finished) { return 'Thank you! Tap End and rate when you are ready.'; }
+    if (n < 4 && !c.retried) {
+      c.retried = true;
+      return 'Can you tell me a little more? Try a full sentence, and add a reason with "because".';
+    }
+    c.retried = false;
+    var ack = ACKS[Math.floor(Math.random() * ACKS.length)];
+    c.qi += 1;
+    if (c.qi >= c.qs.length) { c.finished = true; return ack + ' That was a great talk. Tap End and rate to see your rating.'; }
+    return ack + ' ' + c.qs[c.qi];
+  }
+  function sendMsg() {
+    var c = CHAT;
+    var text = $('chatInput').value.trim();
+    if (!c || !text) { return; }
+    unlockVoice();
+    stopVoice();
+    stopMic();
+    var flu = fluencyInfo(text);
+    var ms = ct.last - ct.first;
+    c.stats.push({ words: flu.count, ms: ms, fillers: flu.fillers, repeats: flu.repeats });
+    c.texts.push(text);
+    addMsg('me', text);
+    $('chatInput').value = '';
+    resetTimer(ct);
+    c.armed = false;
+    $('chatNote').textContent = c.finished ? 'You finished the questions. Tap End and rate when you are ready.' : '';
+    updateSend();
+    var reply = partnerReply(c, flu.count);
+    setTimeout(function () { if (CHAT === c) { partnerSay(reply); } }, 500);
+  }
+  function leaveChat() {
+    var c = CHAT;
+    if (c && c.stats.length > 0 && !c.armed) {
+      c.armed = true;
+      $('chatNote').textContent = 'Tap back again to leave without a rating. Or tap End and rate.';
+      setTimeout(function () { if (CHAT === c) { c.armed = false; } }, 5000);
+      return;
+    }
+    stopVoice(); stopMic();
+    CHAT = null;
+    openChatSetup();
+  }
+  function chatTotals(c) {
+    var wds = 0, fillers = 0, repeats = 0, vw = 0, vms = 0;
+    c.stats.forEach(function (s) {
+      wds += s.words; fillers += s.fillers; repeats += s.repeats;
+      if (s.ms >= 2000 && s.words >= 4) { vw += s.words; vms += s.ms; }
+    });
+    return { messages: c.stats.length, words: wds, fillers: fillers, repeats: repeats, wpm: vms ? Math.round(vw / (vms / 60000)) : 0 };
+  }
+  function clampScore(v) { v = Number(v); if (!isFinite(v)) { v = 0; } return Math.max(0, Math.min(100, Math.round(v))); }
+
+  /* rating: simple rules on your words. It does not use AI. */
+  function analyse(c) {
+    var tot = chatTotals(c);
+    var all = c.texts.join(' ');
+    var tokens = words(all).map(clean).filter(Boolean);
+    var uniq = {};
+    tokens.forEach(function (w) { uniq[w] = 1; });
+    var uniqList = Object.keys(uniq);
+    var longCount = uniqList.filter(function (w) { return w.length >= 7; }).length;
+    var ttr = tokens.length ? uniqList.length / tokens.length : 0;
+    var issues = [];
+    c.texts.forEach(function (t) { grammarIssues(t).forEach(function (x) { issues.push(x); }); });
+    var fmtGood = 0, lowerI = 0;
+    c.texts.forEach(function (t) {
+      var cap = /^[A-Z0-9"']/.test(t), end = /[.!?]["')]?$/.test(t), li = /(^|[\s(])i(?=[\s',.!?]|$)/.test(t);
+      if (li) { lowerI++; issues.push({ said: 'i', better: 'I', why: 'Always write I with a capital letter.' }); }
+      if (cap && end && !li) { fmtGood++; }
+    });
+    var per100 = tokens.length ? issues.length / tokens.length * 100 : 0;
+    var grammar = Math.max(30, clampScore(100 - per100 * 8));
+    var vocab = Math.max(20, clampScore(ttr * 70 + Math.min(30, longCount * 6)));
+    var shortMsgs = c.stats.filter(function (s) { return s.words < 4; }).length;
+    var speedAdj = !tot.wpm ? 0 : tot.wpm < 60 ? -15 : tot.wpm < 80 ? -5 : tot.wpm > 170 ? -10 : 0;
+    var fluency = Math.max(20, clampScore(100 - tot.fillers * 8 - tot.repeats * 6 - shortMsgs * 5 + speedAdj));
+    var avgWords = tokens.length / Math.max(1, tot.messages);
+    var length = Math.max(30, clampScore(avgWords / 12 * 100));
+    var format = clampScore(fmtGood / Math.max(1, tot.messages) * 100);
+    var overall = clampScore(grammar * 0.3 + fluency * 0.25 + vocab * 0.2 + length * 0.15 + format * 0.1);
+    var scores = { grammar: grammar, vocabulary: vocab, fluency: fluency, length: length, format: format, overall: overall };
+
+    var labels = { grammar: 'grammar', vocabulary: 'vocabulary', fluency: 'fluency', length: 'answer length', format: 'sentences' };
+    var best = 'grammar', worst = 'grammar';
+    Object.keys(labels).forEach(function (k) { if (scores[k] > scores[best]) { best = k; } if (scores[k] < scores[worst]) { worst = k; } });
+    var summary = 'Your best area is ' + labels[best] + '. Work on ' + labels[worst] + ' next.';
+
+    var strengths = [];
+    if (grammar >= 85) { strengths.push('Your grammar was clear.'); }
+    if (vocab >= 70) { strengths.push('You used many different words.'); }
+    if (fluency >= 85) { strengths.push('You spoke smoothly, with few fillers.'); }
+    if (avgWords >= 10) { strengths.push('You gave full answers.'); }
+    if (tot.wpm >= 80 && tot.wpm <= 150) { strengths.push('Your speaking speed was good.'); }
+    if (!strengths.length) { strengths.push('You kept the conversation going. That takes courage.'); }
+
+    var tips = [];
+    if (tot.wpm && tot.wpm < 80) { tips.push('Your speed is slow. Try to join the words in a sentence.'); }
+    if (tot.wpm > 150) { tips.push('You speak fast. Slow down and pause after each idea.'); }
+    if (tot.fillers > 0) { tips.push('Pause quietly instead of saying um or uh.'); }
+    if (avgWords < 8) { tips.push('Make your answers longer. Use "because" to give a reason.'); }
+    if (issues.length) { tips.push('Read the mistakes above. Say each better sentence out loud three times.'); }
+    ['Practice a little every day. Short daily practice works best.', 'Take one breath before you answer. It helps you speak slowly.', 'Say your answer in your head first, then say it out loud.'].forEach(function (t) { if (tips.length < 3) { tips.push(t); } });
+
+    var lower = all.toLowerCase();
+    var phrases = PHRASES.filter(function (p) { return lower.indexOf(p[0].replace(' ...', '').toLowerCase()) === -1; }).slice(0, 4).map(function (p) { return p[0] + ' - ' + p[1]; });
+
+    var seen = {};
+    var mistakes = issues.filter(function (x) { var k = x.said.toLowerCase(); if (seen[k]) { return false; } seen[k] = 1; return true; }).slice(0, 8);
+    return { scores: scores, summary: summary, strengths: strengths, mistakes: mistakes, tips: tips.slice(0, 4), phrases: phrases, tot: tot };
+  }
+
+  function listCard(title, arr) {
+    var card = el('div', 'card');
+    card.appendChild(el('span', 'label', title));
+    var ul = el('ul', 'clean');
+    arr.forEach(function (t) { ul.appendChild(el('li', '', String(t))); });
+    card.appendChild(ul);
+    return card;
+  }
+  function endChat() {
+    var c = CHAT;
+    if (!c) { return; }
+    if (c.stats.length < 2) {
+      $('chatNote').textContent = 'Send at least 2 messages first, so there is enough to rate.';
+      return;
+    }
+    stopVoice(); stopMic();
+    var rep = analyse(c);
+    show('report');
+    renderReport(rep, c);
+  }
+  function renderReport(rep, c) {
+    var sc = rep.scores, tot = rep.tot;
+    var body = $('reportBody');
+    body.textContent = '';
+
+    var head = el('div', 'card');
+    head.appendChild(el('span', 'label', 'Your speaking rating · ' + c.topic));
+    var ov = el('div', 'overall');
+    ov.appendChild(el('div', 'big', String(sc.overall)));
+    var meta = el('div', 'meta');
+    meta.appendChild(el('b', '', 'out of 100'));
+    ov.appendChild(meta);
+    head.appendChild(ov);
+    head.appendChild(el('p', '', rep.summary));
+    body.appendChild(head);
+
+    var mc = el('div', 'card');
+    mc.appendChild(el('span', 'label', 'Scores'));
+    [['Grammar', 'grammar'], ['Vocabulary', 'vocabulary'], ['Fluency', 'fluency'], ['Answer length', 'length'], ['Sentences', 'format']].forEach(function (p) {
+      var row = el('div', 'metric');
+      row.appendChild(el('span', '', p[0]));
+      var bar = el('div', 'bar'); var fill = el('i'); fill.style.width = sc[p[1]] + '%'; bar.appendChild(fill);
+      row.appendChild(bar);
+      row.appendChild(el('span', 'num', String(sc[p[1]])));
+      mc.appendChild(row);
+    });
+    body.appendChild(mc);
+
+    var sp = el('div', 'card');
+    sp.appendChild(el('span', 'label', 'Speed and fluency (measured)'));
+    var st = el('div', 'stats');
+    addStat(st, tot.wpm ? '~' + tot.wpm : '-', 'Words per minute. ' + speedLabel(tot.wpm));
+    addStat(st, String(tot.words), 'Words in ' + tot.messages + ' messages');
+    addStat(st, String(tot.fillers), 'Filler words (um, uh)');
+    addStat(st, String(tot.repeats), 'Repeated words');
+    sp.appendChild(st);
+    sp.appendChild(el('p', 'note', 'A clear speaking speed is about 100 to 130 words per minute. Speed is a rough estimate from when your words appeared. Typing is slower than speaking.'));
+    body.appendChild(sp);
+
+    var mcard = el('div', 'card');
+    mcard.appendChild(el('span', 'label', 'Mistakes found'));
+    if (!rep.mistakes.length) { mcard.appendChild(el('p', '', 'No common mistakes found. Great work!')); }
+    rep.mistakes.forEach(function (m) {
+      var box = el('div', 'mistake');
+      box.appendChild(el('span', 'said', m.said));
+      box.appendChild(el('span', 'better', m.better));
+      box.appendChild(el('span', 'why', m.why));
+      mcard.appendChild(box);
+    });
+    body.appendChild(mcard);
+
+    body.appendChild(listCard('What you did well', rep.strengths));
+    body.appendChild(listCard('Tips for next time', rep.tips));
+    if (rep.phrases.length) { body.appendChild(listCard('Useful phrases to try', rep.phrases)); }
+
+    var xp = Math.round(sc.overall / 2);
+    award(xp);
+    data.chats.push({ d: today(), topic: c.topic, overall: sc.overall });
+    data.chats = data.chats.slice(-10);
+    save();
+
+    var done = el('div', 'card');
+    done.appendChild(el('p', '', '+' + xp + ' XP earned'));
+    done.appendChild(el('p', 'note', 'This rating uses simple rules on your words. It can miss mistakes, and it does not hear your voice. It is a guide, not a teacher.'));
+    var row = el('div', 'row');
+    var again = el('button', 'btn', 'New chat');
+    again.addEventListener('click', function () { CHAT = null; openChatSetup(); });
+    var home = el('button', 'btn primary', 'Home');
+    home.addEventListener('click', function () { CHAT = null; renderHome(); show('home'); });
+    row.appendChild(again); row.appendChild(home);
+    done.appendChild(row);
+    body.appendChild(done);
+
+    body.hidden = false;
+    try { window.scrollTo(0, 0); } catch (e) { /* ignore */ }
+    $('streak').textContent = String(currentStreak());
+    $('xp').textContent = String(data.xp);
+  }
+
+  /* ---------- buttons ---------- */
+  $('listen').addEventListener('click', function () { unlockVoice(); speak(L.items[L.i], 0.95); });
+  $('slow').addEventListener('click', function () { unlockVoice(); speak(L.items[L.i], 0.6); });
+  $('mic').addEventListener('click', function () { startMic($('spoken'), lt, $('micMsg'), $('micText'), 'Tap and speak', check); });
+  $('chatMic').addEventListener('click', function () { startMic($('chatInput'), ct, $('chatNote'), $('chatMicText'), 'Speak', null); });
+  $('spoken').addEventListener('input', function () { if ($('spoken').value) { mark(lt); } else { resetTimer(lt); } });
+  $('chatInput').addEventListener('input', function () { if ($('chatInput').value) { mark(ct); } else { resetTimer(ct); } updateSend(); });
+  $('check').addEventListener('click', check);
+  $('retry').addEventListener('click', retry);
+  $('next').addEventListener('click', next);
+  $('skip').addEventListener('click', next);
+  $('back').addEventListener('click', function () { stopMic(); stopVoice(); renderHome(); show('home'); });
+  $('again').addEventListener('click', function () { startLesson(L.tp, L.idx); });
+  $('home2').addEventListener('click', function () { renderHome(); show('home'); });
+  $('tabLessons').addEventListener('click', function () { renderHome(); show('home'); });
+  $('tabChat').addEventListener('click', openChatSetup);
+  $('startChat').addEventListener('click', startChat);
+  $('sendBtn').addEventListener('click', sendMsg);
+  $('endChat').addEventListener('click', endChat);
+  $('chatBack').addEventListener('click', leaveChat);
+
+  renderHome();
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('./sw.js').catch(function () {}); });
+}
+</script>
+</body>
+</html>
